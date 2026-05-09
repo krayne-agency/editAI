@@ -498,22 +498,45 @@ def main() -> None:
         music_file_path: str | None = None
         if add_music_opt:
             library = get_music_library()
-            if library:
+            # Import direct depuis l'UI
+            uploaded_music = st.file_uploader(
+                "Importe une musique (.mp3 / .wav)",
+                type=["mp3", "wav", "aac", "m4a"],
+                key="music_upload",
+                help="Ou dépose des fichiers dans workspace_data/music/ pour les retrouver à chaque session",
+            )
+            if uploaded_music is not None:
+                _music_save = ROOT / "workspace_data" / "music" / uploaded_music.name
+                _music_save.parent.mkdir(parents=True, exist_ok=True)
+                _music_save.write_bytes(uploaded_music.getbuffer())
+                music_file_path = str(_music_save)
+                st.success(f"🎵 {uploaded_music.name} chargée")
+                library = get_music_library()  # rafraîchir
+            if music_file_path is None and library:
                 choices = {f.name: str(f) for f in library}
-                chosen = st.selectbox("Piste musicale", list(choices.keys()), key="music_select")
+                chosen = st.selectbox("Ou choisis dans la bibliothèque", list(choices.keys()), key="music_select")
                 music_file_path = choices[chosen]
+            if music_file_path is None and not library:
+                st.caption("Importe une musique ci-dessus pour commencer.")
+                add_music_opt = False
+            if music_file_path is not None:
                 music_volume = float(st.slider("Volume musique (dB)", -35, -5, -20, key="music_vol",
                                                help="-30 = très discret · -20 = fond · -10 = présent"))
-            else:
-                workspace_music = str(ROOT / "workspace_data" / "music")
-                st.info(f"🎵 Dépose des fichiers .mp3 / .wav dans :\n`{workspace_music}`")
-                add_music_opt = False
 
         run = st.button("Analyser et préparer", type="primary", use_container_width=True)
 
     with col2:
-        st.subheader("2) Résultats")
-        st.caption("Après traitement: vidéo à gauche, texte TikTok à droite, hashtags en dessous.")
+        st.subheader("2) Aperçu")
+        if uploaded_video is not None:
+            st.markdown(
+                '<span style="background:#0f766e;color:#fff;border-radius:6px;padding:3px 10px;'
+                'font-size:0.8rem;font-weight:700;">✂️ Auto-recadrage 9:16 · 1080×1920</span>',
+                unsafe_allow_html=True,
+            )
+            st.video(uploaded_video)
+            st.caption("Aperçu source. La vidéo sera automatiquement recadrée en 9:16 (1080×1920), l'intro noire coupée et l'audio normalisé.")
+        else:
+            st.caption("Importe une vidéo à gauche — l'aperçu apparaît ici instantanément.")
 
     if not run and "editai_results" not in st.session_state:
         return
