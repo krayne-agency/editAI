@@ -1,4 +1,6 @@
 .venv/
+python-embed/
+python-embed.zip
 __pycache__/
 *.pyc
 *.pyo
