@@ -11,3 +11,4 @@ workspace_data/.gemini_key
 *.ico
 dist/
 build/
+app/static/preview_video.*

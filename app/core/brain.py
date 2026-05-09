@@ -109,8 +109,9 @@ def save_session(session: dict) -> None:
         if score > float(profile.get("top_score", 0.0)):
             profile["top_score"] = score
 
-    # ── Auto-apprentissage : mémoriser automatiquement si score >= 72 ──────────
-    if score >= 72:
+    # ── Auto-apprentissage : mémoriser automatiquement si score >= 55 ──────────
+    # Le cerveau apprend de toutes les sessions de qualité acceptable (pas seulement les meilleures)
+    if score >= 55:
         hook = session.get("hook", "").strip()
         if hook and hook not in profile.get("good_hooks", []):
             lst = profile.get("good_hooks", [])

@@ -523,56 +523,89 @@ def main() -> None:
     with col2:
         st.subheader("Aperçu 9:16")
         if uploaded_video is not None:
-            # Frame décorative téléphone
-            st.markdown(
-                '<div style="display:flex;justify-content:center;margin-bottom:4px;">'
-                '<span style="background:#0f766e;color:#fff;border-radius:6px;'
-                'padding:3px 10px;font-size:0.75rem;font-weight:700;">'
-                'Fond flouté + vidéo centrée · 1080×1920</span></div>',
-                unsafe_allow_html=True,
-            )
-            st.markdown(
-                """
-<div style="display:flex;justify-content:center;">
-  <div style="
-    width:200px; height:355px;
-    border:3px solid #1e3a5f; border-radius:28px;
-    background:#000; box-shadow:0 0 24px #0a0f1a, 0 0 0 6px #0d1424;
-    display:flex; align-items:center; justify-content:center;
-    position:relative; overflow:hidden;
-  ">
-    <div style="position:absolute;top:10px;left:50%;transform:translateX(-50%);
-                width:50px;height:5px;background:#1e2d45;border-radius:3px;z-index:2;"></div>
-    <div style="color:#1e3a5f;font-size:1.5rem;">&#9654;</div>
-  </div>
-</div>
-<div style="text-align:center;margin-top:6px;
-            color:#64748b;font-size:0.72rem;">
-  Vidéo en cours de chargement ci-dessous&hellip;
-</div>""",
-                unsafe_allow_html=True,
-            )
-            # Sauvegarde sur disque (pas de base64 = pas de crash)
+            # ── Sauvegarde sur disque ──────────────────────────────────────────
             _preview_path = UPLOADS_DIR / uploaded_video.name
+            UPLOADS_DIR.mkdir(parents=True, exist_ok=True)
             if not _preview_path.exists():
-                UPLOADS_DIR.mkdir(parents=True, exist_ok=True)
-                with st.spinner("Chargement de la vidéo…"):
+                with st.spinner("Enregistrement de la vidéo…"):
                     _preview_path.write_bytes(uploaded_video.getbuffer())
             uploaded_video.seek(0)
-            st.video(str(_preview_path))
+
+            # ── Copie vers app/static/ (servie par Streamlit à /app/static/) ──
+            _static_dir = Path(__file__).resolve().parent / "static"
+            _static_dir.mkdir(exist_ok=True)
+            _vid_ext = Path(uploaded_video.name).suffix.lower() or ".mp4"
+            _static_video = _static_dir / f"preview_video{_vid_ext}"
+            # Recopy si taille différente (nouvelle vidéo)
+            if not _static_video.exists() or _static_video.stat().st_size != _preview_path.stat().st_size:
+                import shutil as _shutil
+                _shutil.copy2(str(_preview_path), str(_static_video))
+            _video_url = f"/app/static/preview_video{_vid_ext}"
+
+            # ── Frame téléphone 9:16 avec vidéo à l'intérieur ─────────────────
+            components.html(f"""
+<div style="display:flex;flex-direction:column;align-items:center;gap:6px;
+            font-family:sans-serif;padding:4px 0;">
+  <span style="background:#0f766e;color:#fff;border-radius:6px;
+               padding:3px 12px;font-size:0.72rem;font-weight:700;letter-spacing:.5px;">
+    &#9654; Aperçu rendu final · 1080&times;1920
+  </span>
+  <!-- Boîtier téléphone -->
+  <div style="
+    position:relative;
+    width:210px; height:373px;
+    border:3px solid #1e3a5f;
+    border-radius:30px;
+    background:#000;
+    box-shadow:0 0 30px #0a0f1a, 0 0 0 7px #0d1424, inset 0 0 0 1px #0f2040;
+    overflow:hidden;
+  ">
+    <!-- Notch -->
+    <div style="position:absolute;top:8px;left:50%;transform:translateX(-50%);
+                width:52px;height:5px;background:#1e2d45;border-radius:3px;z-index:4;pointer-events:none;"></div>
+    <!-- Barre caméra -->
+    <div style="position:absolute;top:10px;right:18px;
+                width:7px;height:7px;background:#0f2040;border-radius:50%;z-index:4;pointer-events:none;"></div>
+    <!-- Vidéo source centrée et rognée en 9:16 -->
+    <video
+      src="{_video_url}"
+      autoplay loop muted playsinline
+      style="
+        position:absolute;top:0;left:0;
+        width:100%;height:100%;
+        object-fit:cover;
+        border-radius:26px;
+      ">
+    </video>
+    <!-- Overlay dégradé bas pour simuler le rendu TikTok -->
+    <div style="
+      position:absolute;bottom:0;left:0;right:0;height:80px;
+      background:linear-gradient(transparent,rgba(0,0,0,.55));
+      border-radius:0 0 26px 26px;z-index:3;pointer-events:none;
+    "></div>
+  </div>
+  <span style="color:#64748b;font-size:0.68rem;text-align:center;">
+    Aperçu source · export = fond flouté 1080&times;1920
+  </span>
+</div>
+""", height=430)
+
         else:
             st.markdown(
                 """
 <div style="display:flex;flex-direction:column;align-items:center;gap:8px;">
   <div style="
-    width:200px; height:355px;
-    border:3px solid #1e3a5f; border-radius:28px;
+    width:210px; height:373px;
+    border:3px solid #1e3a5f; border-radius:30px;
     background:#0d1424; display:flex; align-items:center; justify-content:center;
-    box-shadow:0 0 24px #0a0f1a, 0 0 0 6px #0d1424;
+    box-shadow:0 0 30px #0a0f1a, 0 0 0 7px #0d1424;
   ">
-    <span style="color:#1e3a5f;font-size:2rem;">&#9654;</span>
+    <div style="text-align:center;">
+      <div style="color:#1e3a5f;font-size:2.5rem;margin-bottom:8px;">&#9654;</div>
+      <div style="color:#334155;font-size:0.7rem;">9:16 · TikTok Ready</div>
+    </div>
   </div>
-  <span style="color:#64748b;font-size:0.72rem;">Importe une vidéo pour voir l'aperçu</span>
+  <span style="color:#64748b;font-size:0.72rem;">Importe une vidéo pour voir l&apos;aperçu</span>
 </div>""",
                 unsafe_allow_html=True,
             )
