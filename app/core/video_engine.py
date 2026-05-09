@@ -116,11 +116,14 @@ def prepare_tiktok_video(
     if mean_volume_db < -24:
         loudnorm_target = "-14"
 
-    # TikTok : scale pour remplir le cadre 9:16, puis crop centré (pas de barres noires)
-    vf_chain = (
-        "scale=1080:1920:force_original_aspect_ratio=increase,"
-        "crop=1080:1920,"
-        f"eq=contrast={contrast}:saturation={saturation}"
+    # TikTok : fond flouté 9:16 + vidéo originale centrée par-dessus (pas de crop brutal)
+    filter_complex = (
+        f"[0:v]split=2[raw1][raw2];"
+        f"[raw1]scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,"
+        f"boxblur=20:5,eq=contrast={contrast}:saturation={saturation}[bg];"
+        f"[raw2]scale=1080:1920:force_original_aspect_ratio=decrease,"
+        f"eq=contrast={contrast}:saturation={saturation}[fg];"
+        f"[bg][fg]overlay=(W-w)/2:(H-h)/2[out]"
     )
 
     process_cmd = [
@@ -132,8 +135,10 @@ def prepare_tiktok_video(
         str(input_path),
         "-t",
         "35",
-        "-vf",
-        vf_chain,
+        "-filter_complex",
+        filter_complex,
+        "-map",
+        "[out]",
         "-af",
         f"loudnorm=I={loudnorm_target}:TP=-1.5:LRA=11",
         "-r",

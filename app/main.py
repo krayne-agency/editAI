@@ -513,17 +513,55 @@ def main() -> None:
         run = st.button("Analyser et préparer", type="primary", use_container_width=True)
 
     with col2:
-        st.subheader("2) Aperçu")
+        st.subheader("Aperçu 9:16")
         if uploaded_video is not None:
+            # Frame téléphone 9:16
+            vid_bytes = uploaded_video.read()
+            uploaded_video.seek(0)
+            import base64
+            vid_b64 = base64.b64encode(vid_bytes).decode()
+            suffix = uploaded_video.name.rsplit('.', 1)[-1].lower()
+            mime = "video/mp4" if suffix in ("mp4", "m4v") else f"video/{suffix}"
             st.markdown(
-                '<span style="background:#0f766e;color:#fff;border-radius:6px;padding:3px 10px;'
-                'font-size:0.8rem;font-weight:700;">✂️ Auto-recadrage 9:16 · 1080×1920</span>',
+                f"""
+<div style="display:flex;flex-direction:column;align-items:center;gap:8px;">
+  <span style="background:#0f766e;color:#fff;border-radius:6px;padding:3px 10px;
+               font-size:0.75rem;font-weight:700;">Rendu final : fond flouté + vidéo centrée</span>
+  <div style="
+    width:220px; height:calc(220px * 16 / 9);
+    border:3px solid #1e3a5f; border-radius:28px;
+    overflow:hidden; background:#000;
+    box-shadow:0 0 32px #0a0f1a, 0 0 0 6px #0d1424;
+    position:relative;
+  ">
+    <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+                width:60px;height:8px;background:#1e2d45;border-radius:4px;"></div>
+    <video
+      src="data:{mime};base64,{vid_b64}"
+      autoplay loop muted playsinline
+      style="width:100%;height:100%;object-fit:cover;border-radius:22px;">
+    </video>
+  </div>
+  <span style="color:#64748b;font-size:0.72rem;">Source · sera recadrée 1080×1920</span>
+</div>""",
                 unsafe_allow_html=True,
             )
-            st.video(uploaded_video)
-            st.caption("Aperçu source. La vidéo sera automatiquement recadrée en 9:16 (1080×1920), l'intro noire coupée et l'audio normalisé.")
         else:
-            st.caption("Importe une vidéo à gauche — l'aperçu apparaît ici instantanément.")
+            st.markdown(
+                """
+<div style="display:flex;flex-direction:column;align-items:center;gap:8px;">
+  <div style="
+    width:220px; height:calc(220px * 16 / 9);
+    border:3px solid #1e3a5f; border-radius:28px;
+    background:#0d1424; display:flex; align-items:center; justify-content:center;
+    box-shadow:0 0 32px #0a0f1a, 0 0 0 6px #0d1424;
+  ">
+    <span style="color:#1e3a5f;font-size:2rem;">&#9654;</span>
+  </div>
+  <span style="color:#64748b;font-size:0.72rem;">Importe une vidéo pour voir l'aperçu</span>
+</div>""",
+                unsafe_allow_html=True,
+            )
 
     if not run and "editai_results" not in st.session_state:
         return
