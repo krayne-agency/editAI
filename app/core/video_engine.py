@@ -177,15 +177,11 @@ def prepare_tiktok_video(
     audio_map = ["-map", "[audio_out]"] if has_audio else ["-an"]
     audio_codec = ["-c:a", "aac", "-b:a", "192k", "-ar", "44100"] if has_audio else []
 
-    # TikTok portrait : scale pour remplir 1080×1920, puis zoom ×1.35 avec
-    # recadrage centré légèrement vers le bas (zone arme en FPS)
-    _zoom = 1.35
-    _zw = int(1080 * _zoom) // 2 * 2   # ex. 1458 (pair, obligatoire pour libx264)
-    _zh = int(1920 * _zoom) // 2 * 2   # ex. 2592
+    # TikTok portrait : scale pour que la hauteur = 1920 (aspect ratio conservé),
+    # crop=1080:1920 coupe les côtés qui dépassent → vidéo plein-écran portrait
     filter_complex = (
-        f"[0:v]scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,"
-        f"scale={_zw}:{_zh},"
-        f"crop=1080:1920:(iw-1080)/2:(ih-1920)*3/5,"
+        f"[0:v]scale=-2:1920,"
+        f"crop=1080:1920,"
         f"eq=contrast={contrast}:saturation={saturation},"
         f"fade=t=in:st=0:d={fade_in_dur},"
         f"fade=t=out:st={fade_out_start:.2f}:d={fade_out_dur}[out]"
