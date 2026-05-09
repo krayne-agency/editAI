@@ -77,6 +77,26 @@ def resolve_ffprobe_binary() -> str | None:
     return None
 
 
+def _has_audio_stream(input_path: Path, ffprobe_bin: str | None) -> bool:
+    """Retourne True si la vidéo source possède une piste audio."""
+    if not ffprobe_bin:
+        return True  # on suppose oui si ffprobe absent
+    try:
+        r = subprocess.run(
+            [
+                ffprobe_bin, "-v", "quiet",
+                "-select_streams", "a:0",
+                "-show_entries", "stream=codec_type",
+                "-of", "csv=p=0",
+                str(input_path),
+            ],
+            capture_output=True, text=True, timeout=8,
+        )
+        return bool(r.stdout.strip())
+    except Exception:  # noqa: BLE001
+        return True  # en cas d'erreur, on tente avec audio
+
+
 def prepare_tiktok_video(
     input_path: Path,
     output_dir: Path,
@@ -116,6 +136,18 @@ def prepare_tiktok_video(
     if mean_volume_db < -24:
         loudnorm_target = "-14"
 
+    # Détection piste audio
+    ffprobe_bin = resolve_ffprobe_binary()
+    has_audio = _has_audio_stream(input_path, ffprobe_bin)
+
+    # Audio normalisé dans le filter_complex (compatible -map explicite)
+    audio_filter = (
+        f";[0:a]loudnorm=I={loudnorm_target}:TP=-1.5:LRA=11[audio_out]"
+        if has_audio else ""
+    )
+    audio_map = ["-map", "[audio_out]"] if has_audio else ["-an"]
+    audio_codec = ["-c:a", "aac", "-b:a", "192k", "-ar", "44100"] if has_audio else []
+
     # TikTok : fond flouté 9:16 + vidéo originale centrée par-dessus (pas de crop brutal)
     filter_complex = (
         f"[0:v]split=2[raw1][raw2];"
@@ -124,6 +156,7 @@ def prepare_tiktok_video(
         f"[raw2]scale=1080:1920:force_original_aspect_ratio=decrease,"
         f"eq=contrast={contrast}:saturation={saturation}[fg];"
         f"[bg][fg]overlay=(W-w)/2:(H-h)/2[out]"
+        f"{audio_filter}"
     )
 
     process_cmd = [
@@ -139,8 +172,7 @@ def prepare_tiktok_video(
         filter_complex,
         "-map",
         "[out]",
-        "-af",
-        f"loudnorm=I={loudnorm_target}:TP=-1.5:LRA=11",
+        *audio_map,
         "-r",
         "30",
         "-c:v",
@@ -151,12 +183,7 @@ def prepare_tiktok_video(
         "20",
         "-pix_fmt",
         "yuv420p",
-        "-c:a",
-        "aac",
-        "-b:a",
-        "192k",
-        "-ar",
-        "44100",
+        *audio_codec,
         str(processed_path),
     ]
 
@@ -187,8 +214,10 @@ def prepare_tiktok_video(
     return {
         "processed_video": str(processed_path),
         "thumbnail": str(thumbnail_path),
+        "has_audio": has_audio,
         "adaptation_notes": (
-            "9:16 1080x1920, 30fps, audio normalise, coupe max 35s, "
-            f"trim intro: {start_trim:.2f}s, score ouverture: {opening_score}/100"
+            "9:16 1080x1920, 30fps, "
+            + ("son conservé + normalisé, " if has_audio else "aucune piste audio, ")
+            + f"coupe max 35s, trim intro: {start_trim:.2f}s, score ouverture: {opening_score}/100"
         ),
     }

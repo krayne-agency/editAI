@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 import pandas as pd
@@ -44,6 +45,7 @@ ROOT = Path(__file__).resolve().parents[1]
 UPLOADS_DIR = ROOT / "workspace_data" / "uploads"
 EXPORTS_DIR = ROOT / "workspace_data" / "exports"
 _GEMINI_KEY_FILE = ROOT / "workspace_data" / ".gemini_key"
+_SETTINGS_FILE = ROOT / "workspace_data" / "settings.json"
 _ASSETS_DIR = Path(__file__).resolve().parent / "assets"
 
 _CSS = """
@@ -254,6 +256,22 @@ _LOGO_SMALL_SVG = """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 20
   <rect x="38" y="52" width="12" height="96" rx="6" fill="url(#sp3)"/>
   <polygon points="118,48 100,108 116,108 98,158 144,90 124,90 142,48" fill="url(#sp3)" opacity="0.95"/>
 </svg>"""
+
+
+def _load_settings() -> dict:
+    try:
+        if _SETTINGS_FILE.exists():
+            return json.loads(_SETTINGS_FILE.read_text(encoding="utf-8"))
+    except Exception:  # noqa: BLE001
+        pass
+    return {}
+
+
+def _save_settings(data: dict) -> None:
+    _SETTINGS_FILE.parent.mkdir(parents=True, exist_ok=True)
+    existing = _load_settings()
+    existing.update(data)
+    _SETTINGS_FILE.write_text(json.dumps(existing, ensure_ascii=False, indent=2), encoding="utf-8")
 
 
 def _load_gemini_key() -> str:
@@ -472,6 +490,22 @@ def main() -> None:
                             sc = s.get("score", "?")
                             topic_s = s.get("topic", "")[:30]
                             st.caption(f"  • {ts} — {topic_s} (score: {sc})")
+
+        # ── Dossier d'export personnalisé ──────────────────────────────────
+        st.divider()
+        st.markdown("⚙️ **Export auto**")
+        _s = _load_settings()
+        _custom_folder_val = _s.get("export_folder", "")
+        custom_export_folder = st.text_input(
+            "Copier la vidéo vers...",
+            value=_custom_folder_val,
+            placeholder=str(EXPORTS_DIR),
+            key="custom_export_folder",
+            help="Définis un dossier perso pour retrouver chaque export automatiquement",
+        )
+        if st.button("💾 Sauver le dossier", key="btn_save_export_folder", use_container_width=True):
+            _save_settings({"export_folder": custom_export_folder.strip()})
+            st.toast("📁 Dossier sauvegardé !", icon="✅")
 
     col1, col2 = st.columns([1.2, 1])
 
@@ -831,6 +865,17 @@ def main() -> None:
         if not video_file.exists():
             video_file = Path(media["processed_video"])  # fallback
         if video_file.exists():
+            # Badge résolution + son
+            _has_aud = media.get("has_audio", True)
+            _aud_label = "🔊 Son conservé" if _has_aud else "🔇 Muet (source sans audio)"
+            st.markdown(
+                f'<div style="display:flex;gap:8px;margin-bottom:6px;">'  
+                f'<span style="background:#0f766e;color:#fff;border-radius:6px;padding:2px 10px;font-size:0.72rem;font-weight:700;">'
+                f'✅ 1080×1920 · 9:16</span>'  
+                f'<span style="background:#1e3a5f;color:#e2e8f0;border-radius:6px;padding:2px 10px;font-size:0.72rem;">'  
+                f'{_aud_label}</span></div>',
+                unsafe_allow_html=True,
+            )
             st.video(str(video_file))
             st.download_button(
                 label="Télécharger vidéo prête",
@@ -839,6 +884,20 @@ def main() -> None:
                 mime="video/mp4",
                 use_container_width=True,
             )
+            # Auto-copie vers dossier perso
+            _saved_folder = _load_settings().get("export_folder", "").strip()
+            if _saved_folder:
+                _dest_dir = Path(_saved_folder)
+                if _dest_dir.exists() and _dest_dir.is_dir():
+                    import shutil as _shutil
+                    _dest_file = _dest_dir / video_file.name
+                    try:
+                        _shutil.copy2(str(video_file), str(_dest_file))
+                        st.info(f"📁 Copié dans : `{_dest_file}`")
+                    except Exception as _e:
+                        st.warning(f"⚠️ Copie impossible : {_e}")
+                else:
+                    st.warning(f"⚠️ Dossier d'export introuvable : `{_saved_folder}`")
 
     with result_right:
         st.subheader("Texte TikTok")
