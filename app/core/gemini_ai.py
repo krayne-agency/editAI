@@ -132,17 +132,29 @@ Rules: hook vibe/émotion | esthétique cinématique | CTA "Save for later" | ha
 
         parts: list[str] = []
         if sessions > 0:
-            parts.append(f"Contexte utilisateur: {sessions} vidéos analysées, score moyen {avg_score}/100.")
+            parts.append(
+                f"Ce compte a déjà produit {sessions} vidéos analysées, score moyen {avg_score}/100. "
+                f"Génère un contenu qui dépasse ce score en capitalisant sur ce qui a marché."
+            )
         if top_kw:
-            parts.append(f"Mots-clés récurrents de ce compte: {', '.join(top_kw[:6])}.")
+            parts.append(
+                f"Mots-clés récurrents PROUVÉS sur ce compte : {', '.join(top_kw[:6])}. "
+                f"Intègre-les naturellement dans le hook et les hashtags."
+            )
         if good_hooks:
             examples = " | ".join(f'"{h}"' for h in good_hooks[:3])
-            parts.append(f"Hooks validés performants (inspire-toi du style, ne copie pas): {examples}.")
+            parts.append(
+                f"Hooks qui ont FONCTIONNÉ sur ce compte : {examples}. "
+                f"Utilise la même formule de style mais avec une nouvelle angle d'attaque."
+            )
         if good_titles:
             examples = " | ".join(f'"{t}"' for t in good_titles[:3])
-            parts.append(f"Titres validés performants: {examples}.")
+            parts.append(
+                f"Titres performants : {examples}. "
+                f"Respecte le même format (longueur, énergie, structure)."
+            )
         if parts:
-            brain_section = "\n\nCONTEXTE APPRIS:\n" + "\n".join(parts)
+            brain_section = "\n\nCOMPTE ANALYSÉ — CONTEXTE OBLIGATOIRE:\n" + "\n".join(parts)
 
     prompt = f"""Tu es un expert TikTok viral. Génère un package complet pour une vidéo courte.
 
@@ -175,6 +187,68 @@ Réponds UNIQUEMENT en JSON valide avec ce format exact:
         data = json.loads(match.group())
         required = {"hook", "title", "description", "hashtags", "cta", "voiceover"}
         if required.issubset(data.keys()):
+            return data
+    except (json.JSONDecodeError, KeyError):
+        pass
+    return None
+
+
+def analyze_account(
+    niche: str,
+    tone: str,
+    audience: str,
+    language: str,
+    brain_context: dict,
+    api_key: str,
+) -> dict[str, str] | None:
+    """
+    Analyse le compte et retourne des recommandations stratégiques.
+    Retourne {strengths, gaps, next_content, best_time, growth_tip} ou None.
+    """
+    if not api_key or not api_key.strip():
+        return None
+
+    sessions = brain_context.get("sessions_count", 0)
+    avg_score = brain_context.get("avg_score", 0.0)
+    top_score = brain_context.get("top_score", 0.0)
+    top_kw = brain_context.get("top_keywords", [])
+    good_hooks = brain_context.get("good_hooks", [])
+    good_titles = brain_context.get("good_titles", [])
+    learned_niche = brain_context.get("learned_niche", niche)
+    learned_tone = brain_context.get("learned_tone", tone)
+
+    lang_instruction = "Réponds UNIQUEMENT en français." if language == "fr" else "Respond ONLY in English."
+
+    data_section = f"""Données du compte:
+- Niche: {learned_niche} | Ton: {learned_tone} | Audience: {audience}
+- {sessions} vidéos analysées, score moyen {avg_score}/100, meilleur score {top_score}/100
+- Mots-clés fréquents: {', '.join(str(k) for k, _ in top_kw[:6]) if top_kw else 'aucun encore'}
+- Hooks performants: {' | '.join(f'"{h}"' for h in good_hooks[:2]) if good_hooks else 'aucun encore'}
+- Titres performants: {' | '.join(f'"{t}"' for t in good_titles[:2]) if good_titles else 'aucun encore'}"""
+
+    prompt = f"""Tu es un stratège TikTok expert. Analyse ce compte et donne des recommandations précises et actionnables.
+
+{data_section}
+
+{lang_instruction}
+Réponds UNIQUEMENT en JSON valide:
+{{
+  "strengths": "Ce qui fonctionne bien sur ce compte (2-3 points concrets)",
+  "gaps": "Ce qui manque ou freine la croissance (2-3 points concrets)",
+  "next_content": "Sujet exact de la prochaine vidéo à faire pour maximiser les vues",
+  "hook_formula": "La formule de hook qui marche le mieux pour ce compte (1 phrase template)",
+  "growth_tip": "Le conseil le plus important pour doubler les vues sur les prochaines vidéos"
+}}"""
+
+    raw = _call(prompt, api_key, max_tokens=600)
+    if not raw:
+        return None
+    match = re.search(r"\{.*\}", raw, re.DOTALL)
+    if not match:
+        return None
+    try:
+        data = json.loads(match.group())
+        if {"strengths", "gaps", "next_content", "hook_formula", "growth_tip"}.issubset(data.keys()):
             return data
     except (json.JSONDecodeError, KeyError):
         pass

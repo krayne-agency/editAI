@@ -77,6 +77,25 @@ def resolve_ffprobe_binary() -> str | None:
     return None
 
 
+def _get_video_duration(input_path: Path, ffprobe_bin: str | None) -> float:
+    """Retourne la durée en secondes via ffprobe, ou 35.0 par défaut."""
+    if not ffprobe_bin:
+        return 35.0
+    try:
+        r = subprocess.run(
+            [
+                ffprobe_bin, "-v", "quiet",
+                "-show_entries", "format=duration",
+                "-of", "csv=p=0",
+                str(input_path),
+            ],
+            capture_output=True, text=True, timeout=8,
+        )
+        return float(r.stdout.strip())
+    except Exception:  # noqa: BLE001
+        return 35.0
+
+
 def _has_audio_stream(input_path: Path, ffprobe_bin: str | None) -> bool:
     """Retourne True si la vidéo source possède une piste audio."""
     if not ffprobe_bin:
@@ -140,22 +159,34 @@ def prepare_tiktok_video(
     ffprobe_bin = resolve_ffprobe_binary()
     has_audio = _has_audio_stream(input_path, ffprobe_bin)
 
-    # Audio normalisé dans le filter_complex (compatible -map explicite)
+    # Durée réelle de sortie (capée à 35s, en tenant compte du trim)
+    raw_duration = _get_video_duration(input_path, ffprobe_bin)
+    out_duration = min(raw_duration - start_trim, 35.0)
+    fade_in_dur = 0.5
+    fade_out_dur = 1.5
+    # Fade-out : commence 1.5s avant la fin réelle
+    fade_out_start = max(out_duration - fade_out_dur, fade_in_dur + 1.0)
+
+    # Audio normalisé + fades audio dans le filter_complex (compatible -map explicite)
     audio_filter = (
-        f";[0:a]loudnorm=I={loudnorm_target}:TP=-1.5:LRA=11[audio_out]"
+        f";[0:a]loudnorm=I={loudnorm_target}:TP=-1.5:LRA=11,"
+        f"afade=t=in:st=0:d={fade_in_dur},"
+        f"afade=t=out:st={fade_out_start:.2f}:d={fade_out_dur}[audio_out]"
         if has_audio else ""
     )
     audio_map = ["-map", "[audio_out]"] if has_audio else ["-an"]
     audio_codec = ["-c:a", "aac", "-b:a", "192k", "-ar", "44100"] if has_audio else []
 
-    # TikTok : fond flouté 9:16 + vidéo originale centrée par-dessus (pas de crop brutal)
+    # TikTok : fond flouté 9:16 + vidéo originale centrée + fade-in/out pour boucle engageante
     filter_complex = (
         f"[0:v]split=2[raw1][raw2];"
         f"[raw1]scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,"
         f"boxblur=20:5,eq=contrast={contrast}:saturation={saturation}[bg];"
         f"[raw2]scale=1080:1920:force_original_aspect_ratio=decrease,"
         f"eq=contrast={contrast}:saturation={saturation}[fg];"
-        f"[bg][fg]overlay=(W-w)/2:(H-h)/2[out]"
+        f"[bg][fg]overlay=(W-w)/2:(H-h)/2,"
+        f"fade=t=in:st=0:d={fade_in_dur},"
+        f"fade=t=out:st={fade_out_start:.2f}:d={fade_out_dur}[out]"
         f"{audio_filter}"
     )
 
@@ -215,9 +246,11 @@ def prepare_tiktok_video(
         "processed_video": str(processed_path),
         "thumbnail": str(thumbnail_path),
         "has_audio": has_audio,
+        "out_duration": round(out_duration, 1),
         "adaptation_notes": (
             "9:16 1080x1920, 30fps, "
             + ("son conservé + normalisé, " if has_audio else "aucune piste audio, ")
+            + f"fade-in {fade_in_dur}s + fade-out {fade_out_dur}s (boucle TikTok), "
             + f"coupe max 35s, trim intro: {start_trim:.2f}s, score ouverture: {opening_score}/100"
         ),
     }

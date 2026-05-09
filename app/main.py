@@ -15,6 +15,7 @@ from core.content_engine import (
     score_content,
 )
 from core.exporter import write_publish_package
+from core.gemini_ai import analyze_account as _gemini_analyze_account
 from core.gemini_ai import test_key as test_gemini_key
 from core.opening_analyzer import analysis_to_dict, analyze_opening
 from core.profile_analyzer import analyze_profile, insights_to_dict
@@ -425,11 +426,19 @@ def main() -> None:
             </div>""",
             unsafe_allow_html=True,
         )
+        # ── Pré-remplissage depuis le cerveau IA ─────────────────────────
+        _brain_defaults: dict = {}
+        if _brain is not None:
+            _brain_defaults = _brain.load_profile()
+
         st.markdown("**Profil compte**")
         account_name = st.text_input("Nom du compte", value="MonCompte")
-        niche = st.text_input("Niche", value="Marketing digital")
-        audience = st.text_input("Audience", value="18-34 ans")
-        tone = st.selectbox("Ton", ["dynamique", "expert", "amical", "premium"])
+        niche = st.text_input("Niche", value=_brain_defaults.get("niche", "") or "Marketing digital")
+        audience = st.text_input("Audience", value=_brain_defaults.get("audience", "") or "18-34 ans")
+        _tone_opts = ["dynamique", "expert", "amical", "premium"]
+        _brain_tone = _brain_defaults.get("tone", "dynamique")
+        _tone_idx = _tone_opts.index(_brain_tone) if _brain_tone in _tone_opts else 0
+        tone = st.selectbox("Ton", _tone_opts, index=_tone_idx)
         language = st.selectbox("Langue", ["fr", "en"])
         post_frequency = st.text_input("Fréquence", value="1 vidéo/jour")
         perf_csv = st.file_uploader("CSV performances (optionnel)", type=["csv"])
@@ -490,6 +499,44 @@ def main() -> None:
                             sc = s.get("score", "?")
                             topic_s = s.get("topic", "")[:30]
                             st.caption(f"  • {ts} — {topic_s} (score: {sc})")
+
+        # ── Analyse de compte IA ──────────────────────────────────────────
+        st.divider()
+        st.markdown("**📊 Analyse de compte**")
+        if st.button("🔍 Analyser mon compte", key="btn_analyze_account", use_container_width=True):
+            if not gemini_key.strip():
+                st.warning("⚠️ Clé Gemini requise pour l'analyse de compte.")
+            elif _brain is None or _brain.get_stats()["sessions"] == 0:
+                st.info("💡 Lance au moins une analyse vidéo pour que le cerveau puisse apprendre ton style.")
+            else:
+                with st.spinner("Analyse de ton compte en cours…"):
+                    _brain_ctx = _brain.get_brain_context(niche=niche, tone=tone)
+                    _account_analysis = _gemini_analyze_account(
+                        niche=niche, tone=tone, audience=audience,
+                        language=language, brain_context=_brain_ctx, api_key=gemini_key,
+                    )
+                if _account_analysis:
+                    st.session_state["account_analysis"] = _account_analysis
+                else:
+                    st.error("Analyse impossible — vérifie ta clé Gemini.")
+
+        _acct = st.session_state.get("account_analysis")
+        if _acct:
+            st.markdown(
+                f'<div style="background:#0f1e35;border:1px solid #1e3a5f;border-radius:10px;padding:10px 12px;margin-top:6px;">'
+                f'<div style="color:#83FFC7;font-weight:700;font-size:0.8rem;margin-bottom:6px;">✅ Points forts</div>'
+                f'<div style="color:#cbd5e1;font-size:0.75rem;">{_acct.get("strengths","")}</div>'
+                f'<div style="color:#f59e0b;font-weight:700;font-size:0.8rem;margin:8px 0 4px;">⚠️ Axes d\'amélioration</div>'
+                f'<div style="color:#cbd5e1;font-size:0.75rem;">{_acct.get("gaps","")}</div>'
+                f'<div style="color:#38bdf8;font-weight:700;font-size:0.8rem;margin:8px 0 4px;">🎯 Prochaine vidéo idéale</div>'
+                f'<div style="color:#e2e8f0;font-size:0.75rem;font-weight:600;">{_acct.get("next_content","")}</div>'
+                f'<div style="color:#a78bfa;font-weight:700;font-size:0.8rem;margin:8px 0 4px;">🪝 Formule hook optimale</div>'
+                f'<div style="color:#e2e8f0;font-size:0.75rem;font-style:italic;">{_acct.get("hook_formula","")}</div>'
+                f'<div style="color:#4ade80;font-weight:700;font-size:0.8rem;margin:8px 0 4px;">🚀 Conseil croissance #1</div>'
+                f'<div style="color:#cbd5e1;font-size:0.75rem;">{_acct.get("growth_tip","")}</div>'
+                f'</div>',
+                unsafe_allow_html=True,
+            )
 
         # ── Dossier d'export personnalisé ──────────────────────────────────
         st.divider()
