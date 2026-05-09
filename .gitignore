@@ -1,0 +1,11 @@
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+workspace_data/uploads/
+workspace_data/exports/
+workspace_data/brain/
+workspace_data/.gemini_key
+*.ico
+dist/
+build/
