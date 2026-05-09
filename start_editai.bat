@@ -1,44 +1,82 @@
 @echo off
 setlocal
+title EditAI
 
 cd /d "%~dp0"
 
-echo [editAI] Initialisation environnement Python...
+echo.
+echo  ============================================
+echo   EditAI - Demarrage
+echo  ============================================
+echo.
 
+:: -- Cherche Python ----------------------------------------------------------
 where py >nul 2>nul
 if %ERRORLEVEL%==0 (
   set "PY_CMD=py"
-) else (
-  where python >nul 2>nul
-  if %ERRORLEVEL%==0 (
-    set "PY_CMD=python"
-  ) else (
-    echo [editAI] Python introuvable. Installe Python 3.11+ puis relance.
-    pause
-    exit /b 1
-  )
+  goto :found_py
 )
+where python >nul 2>nul
+if %ERRORLEVEL%==0 (
+  set "PY_CMD=python"
+  goto :found_py
+)
+echo [ERREUR] Python introuvable.
+echo   Installe Python 3.11+ depuis https://www.python.org/downloads/
+echo   Coche "Add Python to PATH" pendant l'installation.
+echo.
+pause
+exit /b 1
 
+:found_py
+
+:: -- Cree le venv si absent --------------------------------------------------
 if not exist ".venv\Scripts\python.exe" (
-  echo [editAI] Creation du venv local...
+  echo [1/3] Creation de l'environnement Python local...
   %PY_CMD% -m venv .venv
   if errorlevel 1 (
-    echo [editAI] Echec creation venv.
+    echo [ERREUR] Impossible de creer le venv.
     pause
     exit /b 1
   )
 )
 
-echo [editAI] Installation/mise a jour des dependances...
-".venv\Scripts\python.exe" -m pip install --upgrade pip --quiet
-".venv\Scripts\python.exe" -m pip install -r requirements.txt --quiet
+:: -- Installe / met a jour les dependances -----------------------------------
+echo [2/3] Verification des dependances ^(premiere fois = quelques minutes^)...
+".venv\Scripts\python.exe" -m pip install --upgrade pip --quiet --no-warn-script-location
+".venv\Scripts\python.exe" -m pip install -r requirements.txt --quiet --no-warn-script-location
 if errorlevel 1 (
-  echo [editAI] Echec installation dependances.
+  echo.
+  echo [ERREUR] Echec installation dependances. Verifie ta connexion Internet.
+  echo   Log disponible dans editai.log
   pause
   exit /b 1
 )
 
-echo [editAI] Lancement de la fenetre...
-".venv\Scripts\pythonw.exe" launcher.py
+:: -- Lance l'application -----------------------------------------------------
+echo [3/3] Lancement d'EditAI...
+
+:: Supprime le log precedent pour repartir propre
+if exist "editai.log" del "editai.log"
+
+:: Utilise pythonw si disponible (pas de console), sinon python normal
+if exist ".venv\Scripts\pythonw.exe" (
+  ".venv\Scripts\pythonw.exe" launcher.py
+) else (
+  start "EditAI" /B ".venv\Scripts\python.exe" launcher.py
+)
+
+:: Attends un peu et verifie si le log contient une erreur
+timeout /t 5 /nobreak >nul 2>&1
+if exist "editai.log" (
+  for %%A in ("editai.log") do if %%~zA GTR 0 (
+    echo.
+    echo [ERREUR] EditAI a plante au demarrage. Details :
+    echo -----------------------------------------------
+    type "editai.log"
+    echo -----------------------------------------------
+    pause
+  )
+)
 
 endlocal

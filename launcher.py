@@ -4,11 +4,33 @@ Streamlit tourne en arrière-plan, pywebview ouvre une fenêtre native.
 """
 from __future__ import annotations
 
+import socket
 import subprocess
 import sys
 import threading
 import time
 from pathlib import Path
+
+# ── Log fichier (capte les crashs en mode pythonw) ──────────────────────────
+_LOG = Path(__file__).resolve().parent / "editai.log"
+try:
+    _log_f = open(_LOG, "w", encoding="utf-8")  # noqa: WPS515
+    sys.stdout = _log_f
+    sys.stderr = _log_f
+except Exception:
+    pass
+
+
+def _find_free_port(start: int = 8501, end: int = 8600) -> int:
+    """Trouve un port TCP libre dans la plage donnée."""
+    for port in range(start, end):
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            try:
+                s.bind(("127.0.0.1", port))
+                return port
+            except OSError:
+                continue
+    return start  # fallback
 
 
 def _make_icon() -> str | None:
@@ -73,14 +95,14 @@ def _make_icon() -> str | None:
         return None
 
 
-def _start_streamlit() -> subprocess.Popen:
+def _start_streamlit(port: int) -> subprocess.Popen:
     """Démarre le serveur Streamlit en sous-processus silencieux."""
     app_main = Path(__file__).resolve().parent / "app" / "main.py"
 
     cmd = [
         sys.executable, "-m", "streamlit", "run", str(app_main),
         "--server.headless=true",
-        "--server.port=8501",
+        f"--server.port={port}",
         "--browser.gatherUsageStats=false",
         "--server.address=127.0.0.1",
     ]
@@ -93,13 +115,13 @@ def _start_streamlit() -> subprocess.Popen:
     )
 
 
-def _wait_for_server(timeout: float = 20.0) -> bool:
+def _wait_for_server(port: int, timeout: float = 30.0) -> bool:
     """Attend que le serveur Streamlit soit prêt."""
     import urllib.request
     deadline = time.time() + timeout
     while time.time() < deadline:
         try:
-            urllib.request.urlopen("http://127.0.0.1:8501", timeout=1)
+            urllib.request.urlopen(f"http://127.0.0.1:{port}", timeout=1)
             return True
         except Exception:
             time.sleep(0.4)
@@ -116,8 +138,9 @@ def main() -> None:
     except Exception:
         pass
 
+    port = _find_free_port()
     icon_path = _make_icon()
-    proc = _start_streamlit()
+    proc = _start_streamlit(port)
 
     # Fenêtre de chargement immédiate
     loading_html = """
@@ -156,9 +179,9 @@ def main() -> None:
     )
 
     def _load_app() -> None:
-        ready = _wait_for_server(timeout=30.0)
+        ready = _wait_for_server(port, timeout=30.0)
         if ready:
-            window.load_url("http://127.0.0.1:8501")
+            window.load_url(f"http://127.0.0.1:{port}")
         else:
             window.load_html(
                 "<html><body style='background:#0e1117;color:#ff4b4b;font-family:sans-serif;"

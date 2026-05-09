@@ -35,7 +35,16 @@ def resolve_ffmpeg_binary() -> str | None:
     if direct:
         return direct
 
-    # 3. Installation winget (PATH pas encore rechargé)
+    # 3. imageio-ffmpeg (bundlé via pip, fonctionne sur tout PC)
+    try:
+        import imageio_ffmpeg  # type: ignore[import]
+        exe = imageio_ffmpeg.get_ffmpeg_exe()
+        if exe and Path(exe).exists():
+            return exe
+    except Exception:
+        pass
+
+    # 4. Installation winget (PATH pas encore rechargé)
     winget_root = Path.home() / "AppData" / "Local" / "Microsoft" / "WinGet" / "Packages"
     if winget_root.exists():
         matches = sorted(winget_root.glob("**/ffmpeg.exe"))
