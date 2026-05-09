@@ -480,6 +480,17 @@ def main() -> None:
         uploaded_video = st.file_uploader("Choisis la vidéo source", type=["mp4", "mov", "mkv", "avi"])
         video_topic = st.text_input("Sujet de la vidéo", value="Astuce croissance TikTok")
         goal = st.selectbox("Objectif", ["engagement", "vues", "conversion", "abonnés"])
+        style = st.selectbox(
+            "Style de contenu",
+            ["standard", "gaming_viral", "educatif", "business", "lifestyle"],
+            format_func=lambda s: {
+                "standard": "⚡ Standard TikTok",
+                "gaming_viral": "🎮 Gaming Viral",
+                "educatif": "📚 Éducatif",
+                "business": "💼 Business / Entreprise",
+                "lifestyle": "✨ Lifestyle / Esthétique",
+            }.get(s, s),
+        )
         extra_keywords = st.text_input("Mots-clés (séparés par virgules)", value="viral,conseil,2026")
         opening_mode = st.checkbox("Mode analyse ouverture (3 premières secondes)", value=True)
 
@@ -566,7 +577,7 @@ def main() -> None:
     <!-- Barre caméra -->
     <div style="position:absolute;top:10px;right:18px;
                 width:7px;height:7px;background:#0f2040;border-radius:50%;z-index:4;pointer-events:none;"></div>
-    <!-- Vidéo source centrée et rognée en 9:16 -->
+    <!-- Fond flouté Medal.tv style (bg zoomé + flouté) -->
     <video
       src="{_video_url}"
       autoplay loop muted playsinline
@@ -574,10 +585,25 @@ def main() -> None:
         position:absolute;top:0;left:0;
         width:100%;height:100%;
         object-fit:cover;
+        filter:blur(18px) brightness(0.6) saturate(1.4);
+        transform:scale(1.1);
         border-radius:26px;
+        z-index:1;
       ">
     </video>
-    <!-- Overlay dégradé bas pour simuler le rendu TikTok -->
+    <!-- Vidéo originale centrée (aspect ratio préservé = Medal style) -->
+    <video
+      src="{_video_url}"
+      autoplay loop muted playsinline
+      style="
+        position:absolute;top:0;left:0;
+        width:100%;height:100%;
+        object-fit:contain;
+        border-radius:26px;
+        z-index:2;
+      ">
+    </video>
+    <!-- Overlay dégradé bas TikTok -->
     <div style="
       position:absolute;bottom:0;left:0;right:0;height:80px;
       background:linear-gradient(transparent,rgba(0,0,0,.55));
@@ -660,6 +686,7 @@ def main() -> None:
             goal=goal,
             extra_keywords=extra_keywords,
             api_key=gemini_key,
+            style=style,
         )
         caption = package_to_caption(content_package)
         variants = generate_hook_title_variants(profile_dict, video_topic, goal, api_key=gemini_key)

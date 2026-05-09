@@ -86,13 +86,40 @@ def build_tiktok_content(
     language: str,
     api_key: str,
     brain_context: dict | None = None,
+    style: str = "standard",
 ) -> dict[str, Any] | None:
     """
     Génère un package complet TikTok via Gemini.
     Retourne un dict {hook, title, description, hashtags, cta, voiceover} ou None si échec.
     brain_context : dict retourné par brain.get_brain_context() pour enrichir le prompt.
+    style : "standard" | "gaming_viral" | "educatif" | "business" | "lifestyle"
     """
     lang_instruction = "Réponds UNIQUEMENT en français." if language == "fr" else "Respond ONLY in English."
+
+    # ── Style-specific instructions ───────────────────────────────────────────
+    _style_instructions = {
+        "gaming_viral": """
+STYLE: Gaming Viral TikTok 2026 — ultra addictif, montage rapide, énergie maximale.
+Rules OBLIGATOIRES:
+- Hook dans les 3 premières secondes : texte énorme et percutant (ex: "Le move le plus INSANE que tu verras aujourd'hui 😳" / "Personne ne réussit ça...")
+- Script chronometre: [0-3s] hook | [3-20s] gameplay intense (zooms, ralentis, cuts beat-sync) | [20-28s] climax choquant + bass boost + flash | [28-35s] CTA engageant
+- Effets visuels: glow, shake, motion blur, sous-titres animés énormes, emojis gaming
+- Ambiance e-sport/streamer : couleurs néon/RGB, vibe cyberpunk
+- CTA gaming obligatoire : "Tu notes ce clip /10 ? 👀" ou "Tu aurais réussi ?"
+- Hashtags UNIQUEMENT gaming : #gaming #tiktokgaming #viral #clip #gaming2026 #insane #montage
+- Ton : excitation maximale, all-caps sur les mots clés, énergique""",
+        "educatif": """
+STYLE: Éducatif viral TikTok — valeur immédiate, pédagogie dynamique.
+Rules: hook question/chiffre choc | contenu en bullet points visuels | CTA "Enregistre si utile" | hashtags #apprendreavectiktok #conseil #astuce""",
+        "business": """
+STYLE: Business / Entrepreneur viral — crédibilité + aspiration.
+Rules: hook résultat concret (ex: "J'ai gagné 10k ce mois") | proof social | CTA "Commente TON objectif" | hashtags #business #entrepreneur #money #success""",
+        "lifestyle": """
+STYLE: Lifestyle esthétique viral — aspiration, FOMO, atmosphère.
+Rules: hook vibe/émotion | esthétique cinématique | CTA "Save for later" | hashtags #lifestyle #aesthetic #vibe #luxe""",
+        "standard": "",
+    }
+    style_section = _style_instructions.get(style, "")
 
     # ── Injection du contexte appris (few-shot examples) ─────────────────────
     brain_section = ""
@@ -123,7 +150,7 @@ Niche: {niche}
 Audience cible: {audience}
 Ton: {tone}
 Sujet de la vidéo: {topic}
-Objectif: {goal}{brain_section}
+Objectif: {goal}{brain_section}{style_section}
 
 {lang_instruction}
 Réponds UNIQUEMENT en JSON valide avec ce format exact:

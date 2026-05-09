@@ -53,6 +53,7 @@ def build_content_package(
     goal: str,
     extra_keywords: str,
     api_key: str = "",
+    style: str = "standard",
 ) -> ContentPackage:
     account = profile.get("account_name", "MonCompte")
     niche = profile.get("niche", "création")
@@ -76,6 +77,7 @@ def build_content_package(
             language=profile.get("language", "fr"),
             api_key=api_key,
             brain_context=brain_ctx,
+            style=style,
         )
         if result:
             return ContentPackage(
