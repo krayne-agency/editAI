@@ -177,14 +177,11 @@ def prepare_tiktok_video(
     audio_map = ["-map", "[audio_out]"] if has_audio else ["-an"]
     audio_codec = ["-c:a", "aac", "-b:a", "192k", "-ar", "44100"] if has_audio else []
 
-    # TikTok : fond flouté 9:16 + vidéo originale centrée + fade-in/out pour boucle engageante
+    # TikTok : zoom/crop centré sur le sujet + fade-in/out pour boucle engageante
+    # scale=increase pour remplir 1080×1920, crop=1080:1920 recadre depuis le centre
     filter_complex = (
-        f"[0:v]split=2[raw1][raw2];"
-        f"[raw1]scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,"
-        f"boxblur=20:5,eq=contrast={contrast}:saturation={saturation}[bg];"
-        f"[raw2]scale=1080:1920:force_original_aspect_ratio=decrease,"
-        f"eq=contrast={contrast}:saturation={saturation}[fg];"
-        f"[bg][fg]overlay=(W-w)/2:(H-h)/2,"
+        f"[0:v]scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,"
+        f"eq=contrast={contrast}:saturation={saturation},"
         f"fade=t=in:st=0:d={fade_in_dur},"
         f"fade=t=out:st={fade_out_start:.2f}:d={fade_out_dur}[out]"
         f"{audio_filter}"

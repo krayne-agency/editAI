@@ -352,14 +352,47 @@ def main() -> None:
     # CSS global + logo inline
     st.markdown(_CSS, unsafe_allow_html=True)
 
-    # ── Bouton flottant pour rouvrir la sidebar (injecté dans le doc parent) ──
+    # ── Bouton flottant pour rouvrir la sidebar + bouton ❮ pour la fermer ──
     components.html("""
 <script>
 (function() {
   var pd = window.parent.document;
   var wp = window.parent;
 
-  // Créer le bouton une seule fois
+  // ── Bouton "❮" injectable dans la sidebar pour la fermer ──────────────
+  function injectCloseBtn() {
+    var sidebar = pd.querySelector('[data-testid="stSidebar"]');
+    if (!sidebar || pd.getElementById('editai-close-btn')) return;
+    sidebar.style.position = 'relative';
+    var cb = pd.createElement('button');
+    cb.id = 'editai-close-btn';
+    cb.innerHTML = '&#10094;';
+    cb.title = 'Fermer le panneau';
+    cb.style.cssText = [
+      'position:absolute','top:10px','right:8px','z-index:2147483647',
+      'background:#1e3a5f','border:none','border-radius:6px',
+      'color:#83FFC7','width:28px','height:28px','cursor:pointer',
+      'font-size:15px','display:flex','align-items:center','justify-content:center',
+      'transition:background 0.15s','padding:0'
+    ].join(';');
+    cb.onmouseover = function() { cb.style.background = '#0f2744'; };
+    cb.onmouseout  = function() { cb.style.background = '#1e3a5f'; };
+    cb.onclick = function() {
+      var sels = [
+        '[data-testid="stSidebarCollapseButton"] button',
+        'button[aria-label="Collapse sidebar"]',
+        'button[aria-label="R\u00e9duire le panneau lat\u00e9ral"]',
+        '[data-testid="stSidebarHeader"] button',
+      ];
+      for (var i = 0; i < sels.length; i++) {
+        var n = pd.querySelector(sels[i]);
+        if (n) { n.click(); return; }
+      }
+    };
+    sidebar.insertBefore(cb, sidebar.firstChild);
+  }
+
+  // ── Bouton flottant "☰" pour rouvrir quand la sidebar est fermée ──────
   if (!pd.getElementById('editai-toggle-btn')) {
     var btn = pd.createElement('button');
     btn.id = 'editai-toggle-btn';
@@ -390,7 +423,7 @@ def main() -> None:
     pd.body.appendChild(btn);
   }
 
-  // Intervalle sur window.parent : survit aux re-renders Streamlit
+  // Intervalle — survit aux re-renders Streamlit
   if (!wp._editaiToggleInterval) {
     wp._editaiToggleInterval = setInterval(function() {
       var b = pd.getElementById('editai-toggle-btn');
@@ -399,6 +432,7 @@ def main() -> None:
         '[data-testid="stSidebarCollapsedControl"], [data-testid="collapsedControl"]'
       );
       b.style.display = collapsed ? 'flex' : 'none';
+      if (!collapsed) injectCloseBtn();
     }, 350);
   }
 })();
@@ -426,21 +460,47 @@ def main() -> None:
             </div>""",
             unsafe_allow_html=True,
         )
-        # ── Pré-remplissage depuis le cerveau IA ─────────────────────────
+        # ── Pré-remplissage depuis settings.json puis brain ─────────────────
+        _settings = _load_settings()
         _brain_defaults: dict = {}
         if _brain is not None:
             _brain_defaults = _brain.load_profile()
 
         st.markdown("**Profil compte**")
-        account_name = st.text_input("Nom du compte", value="MonCompte")
-        niche = st.text_input("Niche", value=_brain_defaults.get("niche", "") or "Marketing digital")
-        audience = st.text_input("Audience", value=_brain_defaults.get("audience", "") or "18-34 ans")
+        account_name = st.text_input(
+            "Nom du compte",
+            value=_settings.get("account_name", "") or "MonCompte",
+        )
+        niche = st.text_input(
+            "Niche",
+            value=_settings.get("niche", "") or _brain_defaults.get("niche", "") or "Marketing digital",
+        )
+        audience = st.text_input(
+            "Audience",
+            value=_settings.get("audience", "") or _brain_defaults.get("audience", "") or "18-34 ans",
+        )
         _tone_opts = ["dynamique", "expert", "amical", "premium"]
-        _brain_tone = _brain_defaults.get("tone", "dynamique")
-        _tone_idx = _tone_opts.index(_brain_tone) if _brain_tone in _tone_opts else 0
+        _saved_tone = _settings.get("tone") or _brain_defaults.get("tone", "dynamique")
+        _tone_idx = _tone_opts.index(_saved_tone) if _saved_tone in _tone_opts else 0
         tone = st.selectbox("Ton", _tone_opts, index=_tone_idx)
-        language = st.selectbox("Langue", ["fr", "en"])
-        post_frequency = st.text_input("Fréquence", value="1 vidéo/jour")
+        _lang_opts = ["fr", "en"]
+        _saved_lang = _settings.get("language", "fr")
+        _lang_idx = _lang_opts.index(_saved_lang) if _saved_lang in _lang_opts else 0
+        language = st.selectbox("Langue", _lang_opts, index=_lang_idx)
+        post_frequency = st.text_input(
+            "Fréquence",
+            value=_settings.get("post_frequency", "") or "1 vidéo/jour",
+        )
+        if st.button("💾 Sauver le profil", key="btn_save_profile", use_container_width=True):
+            _save_settings({
+                "account_name": account_name,
+                "niche": niche,
+                "audience": audience,
+                "tone": tone,
+                "language": language,
+                "post_frequency": post_frequency,
+            })
+            st.success("Profil sauvegardé ✅")
         perf_csv = st.file_uploader("CSV performances (optionnel)", type=["csv"])
 
         st.divider()
