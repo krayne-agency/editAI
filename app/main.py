@@ -69,31 +69,39 @@ html, body, [data-testid="stAppViewContainer"],
 button[title="Deploy"],
 [data-testid="stMainMenuPopover"] { display: none !important; }
 
-/* ── Bouton réouverture sidebar ────────────────────────────────────────── */
+/* ── Bouton réouverture sidebar — natif + fallback ──────────────────────── */
 [data-testid="collapsedControl"],
 [data-testid="stSidebarCollapsedControl"],
 button[aria-label="Open sidebar"],
-button[title="Open sidebar"] {
+button[title="Open sidebar"],
+button[aria-label="Ouvrir le panneau latéral"],
+section[data-testid="stSidebarCollapsedControl"] {
     display: flex !important;
     visibility: visible !important;
     opacity: 1 !important;
     z-index: 999999 !important;
-    background: #0d1424 !important;
-    border: 1px solid #1e3a5f !important;
-    border-radius: 0 8px 8px 0 !important;
-    color: #83FFC7 !important;
-    min-width: 28px !important;
-    min-height: 48px !important;
 }
-[data-testid="collapsedControl"]:hover,
-[data-testid="stSidebarCollapsedControl"]:hover {
-    background: #1e3a5f !important;
+/* Bouton flottant custom */
+#editai-sidebar-toggle {
+    position: fixed;
+    left: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 999999;
+    background: #0d1424;
+    border: 1px solid #1e3a5f;
+    border-radius: 0 8px 8px 0;
+    color: #83FFC7;
+    width: 26px;
+    height: 48px;
+    cursor: pointer;
+    font-size: 16px;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.15s;
 }
-/* Forcer le header visible pour que le toggle ne passe pas derrière */
-[data-testid="stHeader"] {
-    z-index: 99 !important;
-    pointer-events: auto !important;
-}
+#editai-sidebar-toggle:hover { background: #1e3a5f; }
 
 /* ── Titres ───────────────────────────────────────────────────────────── */
 h1, h2, h3, h4, p, label, span, div { color: #e2e8f0; }
@@ -324,6 +332,64 @@ def main() -> None:
 
     # CSS global + logo inline
     st.markdown(_CSS, unsafe_allow_html=True)
+
+    # ── Bouton flottant pour rouvrir la sidebar ───────────────────────────
+    components.html("""
+<button id="editai-sidebar-toggle" title="Ouvrir le panneau IA">&#9776;</button>
+<script>
+(function() {
+  var btn = document.getElementById('editai-sidebar-toggle');
+  if (!btn) return;
+
+  function getSidebarBtn() {
+    var selectors = [
+      '[data-testid="stSidebarCollapsedControl"] button',
+      '[data-testid="collapsedControl"] button',
+      'button[aria-label="Open sidebar"]',
+      'button[kind="header"]',
+    ];
+    for (var i = 0; i < selectors.length; i++) {
+      var el = window.parent.document.querySelector(selectors[i]);
+      if (el) return el;
+    }
+    return null;
+  }
+
+  function isSidebarOpen() {
+    var sb = window.parent.document.querySelector('[data-testid="stSidebar"]');
+    if (!sb) return true;
+    return sb.getAttribute('aria-expanded') !== 'false' &&
+           !window.parent.document.querySelector('[data-testid="stSidebarCollapsedControl"]');
+  }
+
+  function syncVisibility() {
+    var collapsed = window.parent.document.querySelector(
+      '[data-testid="stSidebarCollapsedControl"], [data-testid="collapsedControl"]'
+    );
+    if (collapsed) {
+      var s = window.parent.getComputedStyle(collapsed);
+      if (s.display === 'none' || s.visibility === 'hidden' || s.opacity === '0') {
+        btn.style.display = 'flex';
+      } else {
+        btn.style.display = 'none';
+      }
+    } else {
+      btn.style.display = 'none';
+    }
+  }
+
+  btn.addEventListener('click', function() {
+    var native = getSidebarBtn();
+    if (native) { native.click(); }
+    btn.style.display = 'none';
+  });
+
+  var obs = new MutationObserver(syncVisibility);
+  obs.observe(window.parent.document.body, { subtree: true, attributes: true, childList: true });
+  setTimeout(syncVisibility, 800);
+})();
+</script>
+""", height=0)
 
     # ── Header principal ──────────────────────────────────────────────────
     st.markdown(
