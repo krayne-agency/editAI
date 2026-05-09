@@ -116,9 +116,10 @@ def prepare_tiktok_video(
     if mean_volume_db < -24:
         loudnorm_target = "-14"
 
+    # TikTok : scale pour remplir le cadre 9:16, puis crop centré (pas de barres noires)
     vf_chain = (
-        "scale=1080:1920:force_original_aspect_ratio=decrease,"
-        "pad=1080:1920:(ow-iw)/2:(oh-ih)/2,"
+        "scale=1080:1920:force_original_aspect_ratio=increase,"
+        "crop=1080:1920,"
         f"eq=contrast={contrast}:saturation={saturation}"
     )
 

@@ -109,6 +109,26 @@ def save_session(session: dict) -> None:
         if score > float(profile.get("top_score", 0.0)):
             profile["top_score"] = score
 
+    # ── Auto-apprentissage : mémoriser automatiquement si score >= 72 ──────────
+    if score >= 72:
+        hook = session.get("hook", "").strip()
+        if hook and hook not in profile.get("good_hooks", []):
+            lst = profile.get("good_hooks", [])
+            lst.insert(0, hook)
+            profile["good_hooks"] = lst[:20]
+        title = session.get("title", "").strip()
+        if title and title not in profile.get("good_titles", []):
+            lst = profile.get("good_titles", [])
+            lst.insert(0, title)
+            profile["good_titles"] = lst[:20]
+        hashtags = session.get("hashtags", [])
+        if isinstance(hashtags, list) and hashtags:
+            ht_str = " ".join(str(h) for h in hashtags if h)
+            if ht_str and ht_str not in profile.get("good_hashtags", []):
+                lst = profile.get("good_hashtags", [])
+                lst.insert(0, ht_str)
+                profile["good_hashtags"] = lst[:10]
+
     save_profile(profile)
 
 

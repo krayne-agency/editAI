@@ -333,63 +333,50 @@ def main() -> None:
     # CSS global + logo inline
     st.markdown(_CSS, unsafe_allow_html=True)
 
-    # ── Bouton flottant pour rouvrir la sidebar ───────────────────────────
+    # ── Bouton flottant pour rouvrir la sidebar (injecté dans le doc parent) ──
     components.html("""
-<button id="editai-sidebar-toggle" title="Ouvrir le panneau IA">&#9776;</button>
 <script>
 (function() {
-  var btn = document.getElementById('editai-sidebar-toggle');
-  if (!btn) return;
+  var pd = window.parent.document;
+  if (pd.getElementById('editai-toggle-btn')) return;
 
-  function getSidebarBtn() {
-    var selectors = [
+  var btn = pd.createElement('button');
+  btn.id = 'editai-toggle-btn';
+  btn.innerHTML = '&#9776;';
+  btn.title = 'Ouvrir le panneau IA';
+  btn.style.cssText = [
+    'position:fixed', 'left:0', 'top:50%', 'transform:translateY(-50%)',
+    'z-index:2147483647', 'background:#0d1424', 'border:1px solid #1e3a5f',
+    'border-radius:0 8px 8px 0', 'color:#83FFC7', 'width:26px', 'height:48px',
+    'cursor:pointer', 'font-size:16px', 'display:none', 'align-items:center',
+    'justify-content:center', 'transition:background 0.15s', 'padding:0'
+  ].join(';');
+  btn.onmouseover = function() { btn.style.background = '#1e3a5f'; };
+  btn.onmouseout  = function() { btn.style.background = '#0d1424'; };
+  btn.onclick = function() {
+    var sel = [
       '[data-testid="stSidebarCollapsedControl"] button',
       '[data-testid="collapsedControl"] button',
       'button[aria-label="Open sidebar"]',
-      'button[kind="header"]',
+      'button[aria-label="Ouvrir le panneau lat\u00e9ral"]',
+      '[data-testid="stSidebarCollapsedControl"]',
     ];
-    for (var i = 0; i < selectors.length; i++) {
-      var el = window.parent.document.querySelector(selectors[i]);
-      if (el) return el;
+    for (var i = 0; i < sel.length; i++) {
+      var n = pd.querySelector(sel[i]);
+      if (n) { n.click(); break; }
     }
-    return null;
-  }
+  };
+  pd.body.appendChild(btn);
 
-  function isSidebarOpen() {
-    var sb = window.parent.document.querySelector('[data-testid="stSidebar"]');
-    if (!sb) return true;
-    return sb.getAttribute('aria-expanded') !== 'false' &&
-           !window.parent.document.querySelector('[data-testid="stSidebarCollapsedControl"]');
-  }
-
-  function syncVisibility() {
-    var collapsed = window.parent.document.querySelector(
+  setInterval(function() {
+    var collapsed = pd.querySelector(
       '[data-testid="stSidebarCollapsedControl"], [data-testid="collapsedControl"]'
     );
-    if (collapsed) {
-      var s = window.parent.getComputedStyle(collapsed);
-      if (s.display === 'none' || s.visibility === 'hidden' || s.opacity === '0') {
-        btn.style.display = 'flex';
-      } else {
-        btn.style.display = 'none';
-      }
-    } else {
-      btn.style.display = 'none';
-    }
-  }
-
-  btn.addEventListener('click', function() {
-    var native = getSidebarBtn();
-    if (native) { native.click(); }
-    btn.style.display = 'none';
-  });
-
-  var obs = new MutationObserver(syncVisibility);
-  obs.observe(window.parent.document.body, { subtree: true, attributes: true, childList: true });
-  setTimeout(syncVisibility, 800);
+    btn.style.display = collapsed ? 'flex' : 'none';
+  }, 350);
 })();
 </script>
-""", height=0)
+""", height=1)
 
     # ── Header principal ──────────────────────────────────────────────────
     st.markdown(
