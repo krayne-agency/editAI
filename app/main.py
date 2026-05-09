@@ -338,42 +338,50 @@ def main() -> None:
 <script>
 (function() {
   var pd = window.parent.document;
-  if (pd.getElementById('editai-toggle-btn')) return;
+  var wp = window.parent;
 
-  var btn = pd.createElement('button');
-  btn.id = 'editai-toggle-btn';
-  btn.innerHTML = '&#9776;';
-  btn.title = 'Ouvrir le panneau IA';
-  btn.style.cssText = [
-    'position:fixed', 'left:0', 'top:50%', 'transform:translateY(-50%)',
-    'z-index:2147483647', 'background:#0d1424', 'border:1px solid #1e3a5f',
-    'border-radius:0 8px 8px 0', 'color:#83FFC7', 'width:26px', 'height:48px',
-    'cursor:pointer', 'font-size:16px', 'display:none', 'align-items:center',
-    'justify-content:center', 'transition:background 0.15s', 'padding:0'
-  ].join(';');
-  btn.onmouseover = function() { btn.style.background = '#1e3a5f'; };
-  btn.onmouseout  = function() { btn.style.background = '#0d1424'; };
-  btn.onclick = function() {
-    var sel = [
-      '[data-testid="stSidebarCollapsedControl"] button',
-      '[data-testid="collapsedControl"] button',
-      'button[aria-label="Open sidebar"]',
-      'button[aria-label="Ouvrir le panneau lat\u00e9ral"]',
-      '[data-testid="stSidebarCollapsedControl"]',
-    ];
-    for (var i = 0; i < sel.length; i++) {
-      var n = pd.querySelector(sel[i]);
-      if (n) { n.click(); break; }
-    }
-  };
-  pd.body.appendChild(btn);
+  // Créer le bouton une seule fois
+  if (!pd.getElementById('editai-toggle-btn')) {
+    var btn = pd.createElement('button');
+    btn.id = 'editai-toggle-btn';
+    btn.innerHTML = '&#9776;';
+    btn.title = 'Ouvrir le panneau IA';
+    btn.style.cssText = [
+      'position:fixed', 'left:0', 'top:50%', 'transform:translateY(-50%)',
+      'z-index:2147483647', 'background:#0d1424', 'border:1px solid #1e3a5f',
+      'border-radius:0 8px 8px 0', 'color:#83FFC7', 'width:26px', 'height:48px',
+      'cursor:pointer', 'font-size:16px', 'display:none', 'align-items:center',
+      'justify-content:center', 'transition:background 0.15s', 'padding:0'
+    ].join(';');
+    btn.onmouseover = function() { btn.style.background = '#1e3a5f'; };
+    btn.onmouseout  = function() { btn.style.background = '#0d1424'; };
+    btn.onclick = function() {
+      var sel = [
+        '[data-testid="stSidebarCollapsedControl"] button',
+        '[data-testid="collapsedControl"] button',
+        'button[aria-label="Open sidebar"]',
+        'button[aria-label="Ouvrir le panneau lat\u00e9ral"]',
+        '[data-testid="stSidebarCollapsedControl"]',
+      ];
+      for (var i = 0; i < sel.length; i++) {
+        var n = pd.querySelector(sel[i]);
+        if (n) { n.click(); break; }
+      }
+    };
+    pd.body.appendChild(btn);
+  }
 
-  setInterval(function() {
-    var collapsed = pd.querySelector(
-      '[data-testid="stSidebarCollapsedControl"], [data-testid="collapsedControl"]'
-    );
-    btn.style.display = collapsed ? 'flex' : 'none';
-  }, 350);
+  // Intervalle sur window.parent : survit aux re-renders Streamlit
+  if (!wp._editaiToggleInterval) {
+    wp._editaiToggleInterval = setInterval(function() {
+      var b = pd.getElementById('editai-toggle-btn');
+      if (!b) { clearInterval(wp._editaiToggleInterval); wp._editaiToggleInterval = null; return; }
+      var collapsed = pd.querySelector(
+        '[data-testid="stSidebarCollapsedControl"], [data-testid="collapsedControl"]'
+      );
+      b.style.display = collapsed ? 'flex' : 'none';
+    }, 350);
+  }
 })();
 </script>
 """, height=1)
@@ -515,46 +523,52 @@ def main() -> None:
     with col2:
         st.subheader("Aperçu 9:16")
         if uploaded_video is not None:
-            # Frame téléphone 9:16
-            vid_bytes = uploaded_video.read()
-            uploaded_video.seek(0)
-            import base64
-            vid_b64 = base64.b64encode(vid_bytes).decode()
-            suffix = uploaded_video.name.rsplit('.', 1)[-1].lower()
-            mime = "video/mp4" if suffix in ("mp4", "m4v") else f"video/{suffix}"
+            # Frame décorative téléphone
             st.markdown(
-                f"""
-<div style="display:flex;flex-direction:column;align-items:center;gap:8px;">
-  <span style="background:#0f766e;color:#fff;border-radius:6px;padding:3px 10px;
-               font-size:0.75rem;font-weight:700;">Rendu final : fond flouté + vidéo centrée</span>
+                '<div style="display:flex;justify-content:center;margin-bottom:4px;">'
+                '<span style="background:#0f766e;color:#fff;border-radius:6px;'
+                'padding:3px 10px;font-size:0.75rem;font-weight:700;">'
+                'Fond flouté + vidéo centrée · 1080×1920</span></div>',
+                unsafe_allow_html=True,
+            )
+            st.markdown(
+                """
+<div style="display:flex;justify-content:center;">
   <div style="
-    width:220px; height:calc(220px * 16 / 9);
+    width:200px; height:355px;
     border:3px solid #1e3a5f; border-radius:28px;
-    overflow:hidden; background:#000;
-    box-shadow:0 0 32px #0a0f1a, 0 0 0 6px #0d1424;
-    position:relative;
+    background:#000; box-shadow:0 0 24px #0a0f1a, 0 0 0 6px #0d1424;
+    display:flex; align-items:center; justify-content:center;
+    position:relative; overflow:hidden;
   ">
-    <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
-                width:60px;height:8px;background:#1e2d45;border-radius:4px;"></div>
-    <video
-      src="data:{mime};base64,{vid_b64}"
-      autoplay loop muted playsinline
-      style="width:100%;height:100%;object-fit:cover;border-radius:22px;">
-    </video>
+    <div style="position:absolute;top:10px;left:50%;transform:translateX(-50%);
+                width:50px;height:5px;background:#1e2d45;border-radius:3px;z-index:2;"></div>
+    <div style="color:#1e3a5f;font-size:1.5rem;">&#9654;</div>
   </div>
-  <span style="color:#64748b;font-size:0.72rem;">Source · sera recadrée 1080×1920</span>
+</div>
+<div style="text-align:center;margin-top:6px;
+            color:#64748b;font-size:0.72rem;">
+  Vidéo en cours de chargement ci-dessous&hellip;
 </div>""",
                 unsafe_allow_html=True,
             )
+            # Sauvegarde sur disque (pas de base64 = pas de crash)
+            _preview_path = UPLOADS_DIR / uploaded_video.name
+            if not _preview_path.exists():
+                UPLOADS_DIR.mkdir(parents=True, exist_ok=True)
+                with st.spinner("Chargement de la vidéo…"):
+                    _preview_path.write_bytes(uploaded_video.getbuffer())
+            uploaded_video.seek(0)
+            st.video(str(_preview_path))
         else:
             st.markdown(
                 """
 <div style="display:flex;flex-direction:column;align-items:center;gap:8px;">
   <div style="
-    width:220px; height:calc(220px * 16 / 9);
+    width:200px; height:355px;
     border:3px solid #1e3a5f; border-radius:28px;
     background:#0d1424; display:flex; align-items:center; justify-content:center;
-    box-shadow:0 0 32px #0a0f1a, 0 0 0 6px #0d1424;
+    box-shadow:0 0 24px #0a0f1a, 0 0 0 6px #0d1424;
   ">
     <span style="color:#1e3a5f;font-size:2rem;">&#9654;</span>
   </div>
