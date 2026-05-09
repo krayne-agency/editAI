@@ -718,28 +718,14 @@ def main() -> None:
     <!-- Barre caméra -->
     <div style="position:absolute;top:10px;right:18px;
                 width:7px;height:7px;background:#0f2040;border-radius:50%;z-index:4;pointer-events:none;"></div>
-    <!-- Fond flouté Medal.tv style (bg zoomé + flouté) -->
+    <!-- Vidéo portrait plein-écran : cover = zoom+crop côtés, avec son -->
     <video
       src="{_video_url}"
-      autoplay loop muted playsinline
+      controls playsinline
       style="
         position:absolute;top:0;left:0;
         width:100%;height:100%;
         object-fit:cover;
-        filter:blur(18px) brightness(0.6) saturate(1.4);
-        transform:scale(1.1);
-        border-radius:26px;
-        z-index:1;
-      ">
-    </video>
-    <!-- Vidéo originale centrée (aspect ratio préservé = Medal style) -->
-    <video
-      src="{_video_url}"
-      autoplay loop muted playsinline
-      style="
-        position:absolute;top:0;left:0;
-        width:100%;height:100%;
-        object-fit:contain;
         border-radius:26px;
         z-index:2;
       ">
@@ -752,7 +738,7 @@ def main() -> None:
     "></div>
   </div>
   <span style="color:#64748b;font-size:0.68rem;text-align:center;">
-    Aperçu source · export = fond flouté 1080&times;1920
+    Aperçu · 9:16 portrait · ▶ pour jouer avec son
   </span>
 </div>
 """, height=430)

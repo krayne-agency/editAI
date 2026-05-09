@@ -111,7 +111,10 @@ def _has_audio_stream(input_path: Path, ffprobe_bin: str | None) -> bool:
             ],
             capture_output=True, text=True, timeout=8,
         )
-        return bool(r.stdout.strip())
+        # Si ffprobe échoue (returncode != 0) ou stdout vide → on assume audio présent
+        if r.returncode != 0 or not r.stdout.strip():
+            return r.returncode != 0  # erreur ffprobe = on suppose audio présent
+        return True
     except Exception:  # noqa: BLE001
         return True  # en cas d'erreur, on tente avec audio
 
@@ -167,9 +170,9 @@ def prepare_tiktok_video(
     # Fade-out : commence 1.5s avant la fin réelle
     fade_out_start = max(out_duration - fade_out_dur, fade_in_dur + 1.0)
 
-    # Audio normalisé + fades audio dans le filter_complex (compatible -map explicite)
+    # Audio : volume normalisé + fades synchronisés avec la vidéo
     audio_filter = (
-        f";[0:a]loudnorm=I={loudnorm_target}:TP=-1.5:LRA=11,"
+        f";[0:a]volume=1.5,"
         f"afade=t=in:st=0:d={fade_in_dur},"
         f"afade=t=out:st={fade_out_start:.2f}:d={fade_out_dur}[audio_out]"
         if has_audio else ""
