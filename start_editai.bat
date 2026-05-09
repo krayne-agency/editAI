@@ -12,19 +12,39 @@ echo.
 
 :: -- Cherche Python ----------------------------------------------------------
 where py >nul 2>nul
-if %ERRORLEVEL%==0 (
-  set "PY_CMD=py"
-  goto :found_py
-)
+if %ERRORLEVEL%==0 ( set "PY_CMD=py" & goto :found_py )
+
 where python >nul 2>nul
-if %ERRORLEVEL%==0 (
-  set "PY_CMD=python"
-  goto :found_py
+if %ERRORLEVEL%==0 ( set "PY_CMD=python" & goto :found_py )
+
+where python3 >nul 2>nul
+if %ERRORLEVEL%==0 ( set "PY_CMD=python3" & goto :found_py )
+
+:: Cherche dans les emplacements d'installation standards de Python
+for /d %%D in ("%LOCALAPPDATA%\Programs\Python\Python3*") do (
+  if exist "%%D\python.exe" ( set "PY_CMD=%%D\python.exe" & goto :found_py )
 )
-echo [ERREUR] Python introuvable.
-echo   Installe Python 3.11+ depuis https://www.python.org/downloads/
-echo   Coche "Add Python to PATH" pendant l'installation.
+for /d %%D in ("%APPDATA%\Python\Python3*") do (
+  if exist "%%D\python.exe" ( set "PY_CMD=%%D\python.exe" & goto :found_py )
+)
+for /d %%D in ("C:\Python3*") do (
+  if exist "%%D\python.exe" ( set "PY_CMD=%%D\python.exe" & goto :found_py )
+)
+for /d %%D in ("C:\Program Files\Python3*") do (
+  if exist "%%D\python.exe" ( set "PY_CMD=%%D\python.exe" & goto :found_py )
+)
+for /d %%D in ("C:\Program Files (x86)\Python3*") do (
+  if exist "%%D\python.exe" ( set "PY_CMD=%%D\python.exe" & goto :found_py )
+)
+
+echo [ERREUR] Python introuvable sur ce PC.
 echo.
+echo   1. Va sur https://www.python.org/downloads/
+echo   2. Telecharge Python 3.11 ou plus recent
+echo   3. Lance l'installateur et COCHE "Add Python to PATH"
+echo   4. Relance ce fichier
+echo.
+start https://www.python.org/downloads/
 pause
 exit /b 1
 
