@@ -99,24 +99,25 @@ def build_tiktok_content(
     # ── Style-specific instructions ───────────────────────────────────────────
     _style_instructions = {
         "gaming_viral": """
-STYLE: Gaming Viral TikTok 2026 — ultra addictif, montage rapide, énergie maximale.
-Rules OBLIGATOIRES:
-- Hook dans les 3 premières secondes : texte énorme et percutant (ex: "Le move le plus INSANE que tu verras aujourd'hui 😳" / "Personne ne réussit ça...")
-- Script chronometre: [0-3s] hook | [3-20s] gameplay intense (zooms, ralentis, cuts beat-sync) | [20-28s] climax choquant + bass boost + flash | [28-35s] CTA engageant
-- Effets visuels: glow, shake, motion blur, sous-titres animés énormes, emojis gaming
-- Ambiance e-sport/streamer : couleurs néon/RGB, vibe cyberpunk
-- CTA gaming obligatoire : "Tu notes ce clip /10 ? 👀" ou "Tu aurais réussi ?"
-- Hashtags UNIQUEMENT gaming : #gaming #tiktokgaming #viral #clip #gaming2026 #insane #montage
-- Ton : excitation maximale, all-caps sur les mots clés, énergique""",
+STYLE: Gaming Viral TikTok 2026 — énergie maximale, chaque seconde compte.
+RÈGLES ABSOLUES:
+- [0-2s] Hook visuel + texte CHOC en majuscules (ex: "LE GLITCH QUI M'A SAUVÉ 😱", "IMPOSSIBLE MAIS RÉEL 🔥", "LES DEVS VONT ME BANNIR...")
+- [2-18s] Gameplay le plus intense : zooms rapides beat-sync, ralentis sur le moment clé, cuts toutes les 1-2s
+- [18-28s] CLIMAX : le moment le plus fou, monté avec bass boost + flash blanc + shake cam
+- [28-35s] CTA gaming engageant : "Tu notes /10 ? 👀" | "T'aurais survive ?" | "Tag ton squad 🎮"
+- Effets obligatoires : shake sur les kills, zoom punch sur les highlight, sous-titres animés énormes (INSANE ! / NO WAY ! / LET'S GO !)
+- Musique : phonk / drill / trap beat synced sur les cuts
+- Hashtags: #gaming #tiktokgaming #viral #clip #montage #insane #gaming2026 #fyp
+- Ton: TOUT EN CAPS sur les mots clés, émojis gaming partout, énergie de streamer qui pop""",
         "educatif": """
-STYLE: Éducatif viral TikTok — valeur immédiate, pédagogie dynamique.
-Rules: hook question/chiffre choc | contenu en bullet points visuels | CTA "Enregistre si utile" | hashtags #apprendreavectiktok #conseil #astuce""",
+STYLE: Éducatif viral — valeur immédiate, rétention maximale.
+RÈGLES: Hook question/chiffre choc | 3 points en bullet visuels (texte animé) | "Save si utile" | #apprendreavectiktok #conseil #astuce #tip #viral""",
         "business": """
 STYLE: Business / Entrepreneur viral — crédibilité + aspiration.
-Rules: hook résultat concret (ex: "J'ai gagné 10k ce mois") | proof social | CTA "Commente TON objectif" | hashtags #business #entrepreneur #money #success""",
+RÈGLES: Hook résultat concret chiffré | proof social | storytelling 60s | CTA "Commente TON objectif 👇" | #business #entrepreneur #money #success #mindset""",
         "lifestyle": """
-STYLE: Lifestyle esthétique viral — aspiration, FOMO, atmosphère.
-Rules: hook vibe/émotion | esthétique cinématique | CTA "Save for later" | hashtags #lifestyle #aesthetic #vibe #luxe""",
+STYLE: Lifestyle esthétique viral — FOMO + aspiration pure.
+RÈGLES: Hook vibe/émotion sensorielle | plan cinématique | musique tendance | CTA "Save for later ✨" | #lifestyle #aesthetic #vibe #luxe #motivation""",
         "standard": "",
     }
     style_section = _style_instructions.get(style, "")
@@ -156,7 +157,18 @@ Rules: hook vibe/émotion | esthétique cinématique | CTA "Save for later" | ha
         if parts:
             brain_section = "\n\nCOMPTE ANALYSÉ — CONTEXTE OBLIGATOIRE:\n" + "\n".join(parts)
 
-    prompt = f"""Tu es un expert TikTok viral. Génère un package complet pour une vidéo courte.
+    prompt = f"""Tu es un expert TikTok viral de niveau ÉLITE. Tes vidéos font 500K-5M vues.
+
+RÈGLES D'OR DU HOOK VIRAL (obligatoires, non négociables):
+1. Le hook doit créer une RUPTURE en < 2s — l'algorithme juge les 2 premières secondes
+2. Formules qui cartonnent : 
+   - "Personne ne sait que [secret/astuce choc]..."
+   - "J'ai failli [perdre/rater/mourir] à cause de ça 😳"
+   - "[Chiffre fou] en [temps court] — voici comment"
+   - "Le truc que [pros/devs/experts] ne veulent pas que tu voies"
+   - "[Action impossible] en [X secondes] — c'est réel"
+3. Texte tout en CAPS sur les mots clés, émojis percutants en fin de hook
+4. Le hook DOIT créer une tension ou un mystère qui force à regarder la suite
 
 Niche: {niche}
 Audience cible: {audience}
@@ -167,12 +179,12 @@ Objectif: {goal}{brain_section}{style_section}
 {lang_instruction}
 Réponds UNIQUEMENT en JSON valide avec ce format exact:
 {{
-  "hook": "Phrase d'accroche ultra-percutante (max 15 mots) pour les 2 premières secondes",
-  "title": "Titre TikTok optimisé (max 60 caractères)",
-  "description": "Description mobile-first engageante (max 120 caractères)",
-  "hashtags": ["#tag1", "#tag2", "#tag3", "#tag4", "#tag5", "#tag6", "#tag7"],
-  "cta": "Call-to-action court et direct (max 10 mots)",
-  "voiceover": "Script voix-off chronométré:\\n[0s] hook percutant\\n[2s] développement\\n[4s] valeur ajoutée\\n[6s] solution\\n[8s] CTA"
+  "hook": "Hook ULTRA percutant (max 15 mots, formule prouvée virale)",
+  "title": "Titre TikTok optimisé SEO (max 60 car, mots-clés en tête)",
+  "description": "Description engageante avec question ou CTA (max 120 car)",
+  "hashtags": ["#tag1", "#tag2", "#tag3", "#tag4", "#tag5", "#tag6", "#tag7", "#fyp", "#viral"],
+  "cta": "CTA qui force l'interaction (like / comment / save / follow — max 10 mots)",
+  "voiceover": "Script voix-off CHRONOMÉTRÉ:\\n[0-2s] HOOK choc (phrase d'accroche)\\n[2-10s] Mise en situation / contexte rapide\\n[10-25s] Le moment clé / la valeur / le gameplay\\n[25-30s] Climax / révélation / best moment\\n[30-35s] CTA direct et engageant"
 }}"""
 
     raw = _call(prompt, api_key, max_tokens=700)
@@ -274,23 +286,25 @@ def generate_variants(
             examples = " | ".join(f'"{h}"' for h in good_hooks[:3])
             brain_section = f"\n\nCONTEXTE: Hooks validés comme performants sur ce compte (inspire le style, varie les formules): {examples}."
 
-    prompt = f"""Tu es un expert TikTok. Génère 3 variantes DIFFÉRENTES de hook+titre pour:
+    prompt = f"""Tu es un expert TikTok viral ÉLITE. Génère 3 variantes de hooks ULTRA percutants pour:
 
 Niche: {niche}
 Ton: {tone}
 Sujet: {topic}
 Objectif: {goal}{brain_section}
 
-Utilise 3 formules différentes:
-- Variante 1: Question provocatrice
-- Variante 2: Chiffre ou statistique choc
-- Variante 3: Révélation ou secret
+Utilise ces 3 formules virales PROUVÉES:
+- Variante 1 (CHOC/PEUR): "J'ai failli [désastre] à cause de [élément du sujet]..." | "Ce [truc] peut [conséquence choc]..."
+- Variante 2 (SECRET/INTERDIT): "Le secret que [pros/devs/experts] cachent sur [sujet]" | "Personne ne parle de ça..."  
+- Variante 3 (DÉFI/IMPOSSIBLE): "[Action] en [temps court] — 99% échouent" | "Seuls les [top X%] connaissent ça"
+
+RÈGLE: chaque hook max 12 mots, mots clés en CAPS, 1-2 émojis percutants.
 
 Réponds UNIQUEMENT en JSON valide:
 [
-  {{"hook": "...", "title": "..."}},
-  {{"hook": "...", "title": "..."}},
-  {{"hook": "...", "title": "..."}}
+  {{"hook": "...", "title": "Titre SEO optimisé variante 1"}},
+  {{"hook": "...", "title": "Titre SEO optimisé variante 2"}},
+  {{"hook": "...", "title": "Titre SEO optimisé variante 3"}}
 ]"""
 
     raw = _call(prompt, api_key, max_tokens=400)

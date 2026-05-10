@@ -148,11 +148,7 @@ def prepare_tiktok_video(
 
     start_trim = min(max(black_intro_sec, 0.0), 1.5)
 
-    contrast = 1.03
-    saturation = 1.06
-    if opening_score < 65:
-        contrast = 1.08
-        saturation = 1.12
+    # (contrast/saturation/sharpness/vignette définis plus bas selon opening_score)
 
     loudnorm_target = "-16"
     if mean_volume_db < -24:
@@ -180,12 +176,38 @@ def prepare_tiktok_video(
     audio_map = ["-map", "[audio_out]"] if has_audio else ["-an"]
     audio_codec = ["-c:a", "aac", "-b:a", "192k", "-ar", "44100"] if has_audio else []
 
-    # TikTok portrait : scale pour que la hauteur = 1920 (aspect ratio conservé),
-    # crop=1080:1920 coupe les côtés qui dépassent → vidéo plein-écran portrait
+    # ── Paramètres animation selon la dynamique de la vidéo ──────────────
+    # Score élevé (contenu dynamique) → effets plus forts
+    if opening_score >= 75:
+        # Vidéo dynamique : saturation intense + vignette large + netteté haute
+        saturation = 1.20
+        contrast = 1.06
+        sharpness = "unsharp=5:5:1.5:3:3:0.0"
+        vignette = "vignette=PI/3.5"
+    elif opening_score >= 55:
+        # Vidéo correcte : paramètres intermédiaires
+        saturation = 1.12
+        contrast = 1.05
+        sharpness = "unsharp=5:5:1.0:3:3:0.0"
+        vignette = "vignette=PI/4"
+    else:
+        # Vidéo plate : boost maximal pour compenser
+        saturation = 1.25
+        contrast = 1.10
+        sharpness = "unsharp=5:5:2.0:3:3:0.0"
+        vignette = "vignette=PI/4"
+
+    # TikTok portrait : scale hauteur 1920, crop les côtés, puis :
+    #   unsharp  → netteté / détails (arme bien nette)
+    #   eq       → contraste + saturation cinématiques
+    #   vignette → assombrit les bords, centre l'oeil sur le sujet
+    #   fade     → fondu entrant/sortant pour boucle engageante
     filter_complex = (
         f"[0:v]scale=-2:1920,"
         f"crop=1080:1920,"
-        f"eq=contrast={contrast}:saturation={saturation},"
+        f"{sharpness},"
+        f"eq=contrast={contrast}:saturation={saturation}:brightness=0.02,"
+        f"{vignette},"
         f"fade=t=in:st=0:d={fade_in_dur},"
         f"fade=t=out:st={fade_out_start:.2f}:d={fade_out_dur}[out]"
         f"{audio_filter}"

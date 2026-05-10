@@ -705,19 +705,16 @@ def main() -> None:
   <!-- Boîtier téléphone -->
   <div style="
     position:relative;
-    width:210px; height:373px;
-    border:3px solid #1e3a5f;
-    border-radius:30px;
+    width:162px; height:288px;
+    border:2px solid #1e3a5f;
+    border-radius:24px;
     background:#000;
-    box-shadow:0 0 30px #0a0f1a, 0 0 0 7px #0d1424, inset 0 0 0 1px #0f2040;
+    box-shadow:0 0 24px #0a0f1a, 0 0 0 5px #0d1424, inset 0 0 0 1px #0f2040;
     overflow:hidden;
   ">
     <!-- Notch -->
-    <div style="position:absolute;top:8px;left:50%;transform:translateX(-50%);
-                width:52px;height:5px;background:#1e2d45;border-radius:3px;z-index:4;pointer-events:none;"></div>
-    <!-- Barre caméra -->
-    <div style="position:absolute;top:10px;right:18px;
-                width:7px;height:7px;background:#0f2040;border-radius:50%;z-index:4;pointer-events:none;"></div>
+    <div style="position:absolute;top:6px;left:50%;transform:translateX(-50%);
+                width:38px;height:4px;background:#1e2d45;border-radius:3px;z-index:4;pointer-events:none;"></div>
     <!-- Vidéo portrait plein-écran : cover = zoom+crop côtés, avec son -->
     <video
       src="{_video_url}"
@@ -726,36 +723,36 @@ def main() -> None:
         position:absolute;top:0;left:0;
         width:100%;height:100%;
         object-fit:cover;
-        border-radius:26px;
+        border-radius:22px;
         z-index:2;
       ">
     </video>
     <!-- Overlay dégradé bas TikTok -->
     <div style="
-      position:absolute;bottom:0;left:0;right:0;height:80px;
-      background:linear-gradient(transparent,rgba(0,0,0,.55));
-      border-radius:0 0 26px 26px;z-index:3;pointer-events:none;
+      position:absolute;bottom:0;left:0;right:0;height:60px;
+      background:linear-gradient(transparent,rgba(0,0,0,.6));
+      border-radius:0 0 22px 22px;z-index:3;pointer-events:none;
     "></div>
   </div>
-  <span style="color:#64748b;font-size:0.68rem;text-align:center;">
-    Aperçu · 9:16 portrait · ▶ pour jouer avec son
+  <span style="color:#64748b;font-size:0.65rem;text-align:center;">
+    ▶ Aperçu · 9:16 · son actif
   </span>
 </div>
-""", height=430)
+""", height=340)
 
         else:
             st.markdown(
                 """
 <div style="display:flex;flex-direction:column;align-items:center;gap:8px;">
   <div style="
-    width:210px; height:373px;
-    border:3px solid #1e3a5f; border-radius:30px;
+    width:162px; height:288px;
+    border:2px solid #1e3a5f; border-radius:24px;
     background:#0d1424; display:flex; align-items:center; justify-content:center;
-    box-shadow:0 0 30px #0a0f1a, 0 0 0 7px #0d1424;
+    box-shadow:0 0 24px #0a0f1a, 0 0 0 5px #0d1424;
   ">
     <div style="text-align:center;">
-      <div style="color:#1e3a5f;font-size:2.5rem;margin-bottom:8px;">&#9654;</div>
-      <div style="color:#334155;font-size:0.7rem;">9:16 · TikTok Ready</div>
+      <div style="color:#1e3a5f;font-size:2rem;margin-bottom:8px;">&#9654;</div>
+      <div style="color:#334155;font-size:0.65rem;">9:16 · TikTok Ready</div>
     </div>
   </div>
   <span style="color:#64748b;font-size:0.72rem;">Importe une vidéo pour voir l&apos;aperçu</span>
